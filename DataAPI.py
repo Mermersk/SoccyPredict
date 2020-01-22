@@ -1,5 +1,8 @@
 import urllib.request
 import json
+from tabulate import tabulate
+import time
+#from operator import itemgetter
 
 def saveAsJSON(dictionary):
     with open("leagues.json", "w") as leagueFile:
@@ -48,6 +51,7 @@ def getTeamID(teamName, leagueID):
 Parameters: All strings
 returns: A dictionary with all fixtures for the season for specified team in specified leauge. 
 """
+   
 def getFixtures(countryName, leagueName, teamName):
     #get fixtures based on .../fixture/team/teamID/leagueID
     leagueID = getLeagueID(countryName, leagueName)
@@ -81,6 +85,34 @@ def getFixtures(countryName, leagueName, teamName):
         #print(fixtures)
     
     return fixtures["api"]["fixtures"]
+
+
+"""
+Should get upcoming fixtures for leagueName
+"""
+def getUpcomingFixtures(countryName, leagueName, howMany):
+
+    leagueID = getLeagueID(countryName, leagueName)
+    endpointURL = "https://api-football-v1.p.rapidapi.com/v2/fixtures/league/{}/next/{}".format(leagueID, howMany)
+
+    rec = urllib.request.Request(endpointURL)
+    #Need to add this since i bought access on RapidAPI
+    rec.add_header("X-RapidAPI-Host", "api-football-v1.p.rapidapi.com")
+    #adding authentication key to access the API-Football API
+    rec.add_header("X-RapidAPI-Key", "1acHO5cH5QmshrLw9WFJXPxKPIgEp1uE4YzjsnGOydel9eubG9")
+
+    #make the request and pass in the Request object
+    with urllib.request.urlopen(rec) as response:
+        print("Status code from response: {}".format(response.getcode()))
+        print("Status code from response: {}".format(response.getheaders()))
+        decodedfixtures = response.read()
+        
+        fixtures = json.loads(decodedfixtures, encoding = "utf-8")
+
+        nextFixtures = fixtures["api"]["fixtures"]
+
+        for fixture in nextFixtures:
+            print("{} vs {}".format(fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"]))
 
 """
 Parameter: a dictionary with fixtures
@@ -190,6 +222,8 @@ def WillThereBeGoal(homeTeamSP, awayTeamSP, homeScoring, homeConceding, awayScor
 
     print("Over 0.5: {} - Under 0.5: {}".format(overDecimalBettingOdds, underDecimalBettingOdds))
 
+    return overDecimalBettingOdds, underDecimalBettingOdds
+
     #Over-under- different calculation under here:
 
     bothTeamsS = ((homeScoring + awayScoring) / 2.0) * 100
@@ -206,11 +240,16 @@ def WillThereBeGoal(homeTeamSP, awayTeamSP, homeScoring, homeConceding, awayScor
     print("V2 Over 0.5: {} - Under 0.5: {}".format(over2DecimalBettingOdds, under2DecimalBettingOdds))
 
 
+
+
+bettingLabel = []
+bettingLabelHeaders = ["League:", "HomeTeam:", "AwayTeam:", "H - Over 0.5:", "H - Under 0.5:", "A - Over 0.5:", "A - Under 0.5:", "1H Over 0.5", "1H Under 0.5:"]
+
 #[
 # Predicts wether a goal for each team will be scored in
 # the first half.
 # ]
-def predict(countryName, leagueName, homeTeam, awayTeam):
+def predictOne(countryName, leagueName, homeTeam, awayTeam):
 
     homeTeamFixtures = getFixtures(countryName, leagueName, homeTeam)
     awayTeamFixtures = getFixtures(countryName, leagueName, awayTeam)
@@ -222,13 +261,63 @@ def predict(countryName, leagueName, homeTeam, awayTeam):
     homePOddsOfScoring = round(((homeScoring + awayConceding) / 2.0) * 100)
     awayPOddsOfScoring = round(((awayScoring + homeConceding) / 2.0) * 100)
 
-    print("{} to score against opponent is: {}% Betting odds: {}"
-    .format(homeTeam, homePOddsOfScoring, round(100/homePOddsOfScoring, 3)))
+    awayPOddsOfCleanSheet = 100 - homePOddsOfScoring
+    homePOddsOfCleanSheet = 100 - awayPOddsOfScoring
+
+    over05, under05 = WillThereBeGoal(homePOddsOfScoring, awayPOddsOfScoring, homeScoring, homeConceding, awayScoring, awayConceding)
+
+    bettingLabel.append([leagueName, homeTeam, awayTeam, round(100/homePOddsOfScoring, 3), round(100/awayPOddsOfCleanSheet, 3), round(100/awayPOddsOfScoring, 3), round(100/homePOddsOfCleanSheet, 3), over05, under05])
+
+    print("{} to score against opponent is: {}% Betting odds: {} - Under 0.5: {}"
+    .format(homeTeam, homePOddsOfScoring, round(100/homePOddsOfScoring, 3), round(100/awayPOddsOfCleanSheet, 3)))
     
-    print("{} to score against opponent is: {}% Betting odds: {}"
-    .format(awayTeam, awayPOddsOfScoring, round(100/awayPOddsOfScoring, 3)))
+    
+    print("{} to score against opponent is: {}% Betting odds: {} - Under 0.5: {}"
+    .format(awayTeam, awayPOddsOfScoring, round(100/awayPOddsOfScoring, 3), round(100/homePOddsOfCleanSheet, 3)))
 
-    WillThereBeGoal(homePOddsOfScoring, awayPOddsOfScoring, homeScoring, homeConceding, awayScoring, awayConceding)
 
-#printAllTeamsInLeague("India", "Indian Super League")
-predict("India", "Indian Super League", "Chennaiyin", "NorthEast United")
+  
+def predict(Matches):
+
+    #Run predict function on each match, bettingLabel will updated inside predictOne
+    for i in range(len(Matches)):
+        predictOne(Matches[i][0], Matches[i][1], Matches[i][2], Matches[i][3])
+        time.sleep(11)
+        
+    bettingLabel.sort(key = lambda nestedList: nestedList[8])
+    #lambda nestedList: nestedList[8]
+    #Pretty print all games
+    print(tabulate(bettingLabel, headers=bettingLabelHeaders))
+
+def printNewTableOrder(index):
+    bettingLabel.sort(key = lambda nestedList: nestedList[8])
+    #Pretty print all games
+    print(tabulate(bettingLabel, headers=bettingLabelHeaders))
+
+
+matchesInput = [
+
+                ["Egypt", "Premier League", "Tanta SC", "El Gouna FC"],
+                ["Egypt", "Premier League", "AL Assiouty", "Misr EL Makasa"],
+                
+
+                ]  
+predict(matchesInput)
+
+#printAllTeamsInLeague("Scotland", "Championship")
+
+#getUpcomingFixtures("India", "Indian Super League", 6)
+
+stop = False
+while stop is not True:
+    i = input("Insert index to be sorted on: ")
+    if i == "q":
+        stop = True
+        break
+    index = int(i)
+    printNewTableOrder(index)
+
+
+
+#predict("Netherlands", "Eredivisie", "ADO Den Haag", "Waalwijk")
+#print(tabulate([[1, "First", "fyrstur"] , [2, "Annar","Second"]]))
