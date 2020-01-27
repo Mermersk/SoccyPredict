@@ -1,7 +1,7 @@
 import Fetcher as Fetch
 
-
-def calculateHTChance(fixtures, homeORaway, teamName):
+#EDIT 27. Jan: Changed to fulltime instead of halftime
+def calculateScoringChance(fixtures, homeORaway, teamName):
     
     """
     Arguments:
@@ -23,28 +23,30 @@ def calculateHTChance(fixtures, homeORaway, teamName):
         if (homeORaway == "home"):
             if (teamName == fixture["homeTeam"]["team_name"]):
                 print("{} vs {}".format(fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"]))
-                print("score at halftime: {}".format(fixture["score"]["halftime"]))
+                #print("score at halftime: {}".format(fixture["score"]["halftime"]))
+                print("score at fulltime: {}".format(fixture["score"]["fulltime"]))
 
-                halfTimeScore = fixture["score"]["halftime"]
+                fullTimeScore = fixture["score"]["fulltime"]
                 totalMatces += 1
-                if (int(halfTimeScore[0]) > 0):
+                if (int(fullTimeScore[0]) > 0):
                     wasGoalScored += 1
 
-                if (int(halfTimeScore[2]) > 0):
+                if (int(fullTimeScore[2]) > 0):
                     wasGoalConceded += 1
 
         elif (homeORaway == "away"):
             if (teamName == fixture["awayTeam"]["team_name"]):
                 print("{} vs {}".format(fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"]))
-                print("score at halftime: {}".format(fixture["score"]["halftime"]))
+                #print("score at halftime: {}".format(fixture["score"]["halftime"]))
+                print("score at fulltime: {}".format(fixture["score"]["fulltime"]))
                     
-                halfTimeScore = fixture["score"]["halftime"]
+                fullTimeScore = fixture["score"]["fulltime"]
                 totalMatces += 1
 
-                if (int(halfTimeScore[0]) > 0):
+                if (int(fullTimeScore[0]) > 0):
                     wasGoalConceded += 1
 
-                if (int(halfTimeScore[2]) > 0):
+                if (int(fullTimeScore[2]) > 0):
                     wasGoalScored += 1
 
 
@@ -59,12 +61,12 @@ def calculateHTChance(fixtures, homeORaway, teamName):
     gcDecimalChance = round(wasGoalConceded/totalMatces, 2)
     #Calculating and printing out scoring stats
     print("Scored in {} matches out {} matches".format(wasGoalScored, totalMatces))
-    print("Odds of {} scoring in a {} match in first half is: {} {}%"
+    print("Odds of {} scoring in a {} match: {} {}%"
     .format(teamName, homeORaway, gsDecimalChance, round((wasGoalScored/totalMatces) * 100)))
 
     #Calculating and printing out conceded stats
     print("Conceded in {} matches out of {} matches".format(wasGoalConceded, totalMatces))
-    print("Odds of {} conceding in a {} match in first half is: {} {}%"
+    print("Odds of {} conceding in a {} match: {} {}%"
     .format(teamName, homeORaway, gcDecimalChance, round((wasGoalConceded/totalMatces) * 100)))
 
     print("\n")
@@ -100,8 +102,6 @@ def WillThereBeGoal(homeTeamSD, awayTeamSD):
     # Chanche of 1 team scoring: P(A) + P(B) - P(A and B)
     # Chance of both events not happening is: (1.0 - P(A)) * (1.0 - P(B)) = P(Not A and Not B)
     """
-
-    #Converting from percentage to decimal
 
     under05 = ((1.0 - homeTeamSD) * (1.0 - awayTeamSD))
     #over is odds of it being over 0.5 goals
@@ -150,8 +150,8 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     homeTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, homeTeam)
     awayTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, awayTeam)
 
-    homeScoring, homeConceding = calculateHTChance(homeTeamFixtures, "home", homeTeam)
-    awayScoring, awayConceding = calculateHTChance(awayTeamFixtures, "away", awayTeam)
+    homeScoring, homeConceding = calculateScoringChance(homeTeamFixtures, "home", homeTeam)
+    awayScoring, awayConceding = calculateScoringChance(awayTeamFixtures, "away", awayTeam)
 
     #Home team odds of scoring in decimal
     homeDOddsOfScoring = (homeScoring + awayConceding) / 2.0
@@ -164,9 +164,10 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     awayPOddsOfCleanSheet = round(100 - homePOddsOfScoring)
     homePOddsOfCleanSheet = round(100 - awayPOddsOfScoring)
 
-    over05, under05 = WillThereBeGoal(homeDOddsOfScoring, awayDOddsOfScoring)
+    #Perhaps later....
+    #over05, under05 = WillThereBeGoal(homeDOddsOfScoring, awayDOddsOfScoring)
 
-    bettingLabel = [leagueName, homeTeam, awayTeam, round(100/homePOddsOfScoring, 3), round(100/awayPOddsOfCleanSheet, 3), round(100/awayPOddsOfScoring, 3), round(100/homePOddsOfCleanSheet, 3), over05, under05]
+    bettingLabel = [leagueName, homeTeam, awayTeam, round(100/homePOddsOfScoring, 3), round(100/awayPOddsOfCleanSheet, 3), round(100/awayPOddsOfScoring, 3), round(100/homePOddsOfCleanSheet, 3)]
 
     print("{} to score against opponent is: {}% Betting odds: {} - Under 0.5: {}"
     .format(homeTeam, homePOddsOfScoring, round(100/homePOddsOfScoring, 3), round(100/awayPOddsOfCleanSheet, 3)))

@@ -1,6 +1,8 @@
 import urllib.request
 import json
+import base64
 
+#------------------------------- All functions below here make calls to api-football---------------
 
 def printAllTeamsInLeague(countryName, leagueName):
     """Simply prints out all teams in a specific league to the terminal """
@@ -29,7 +31,7 @@ def saveAsJSON(dictionary):
 
 
 def getLeagueID(countryName, leagueName):
-    """Finds the league ID of a league. By defualt it will return the current live league(2019)"""
+    """Finds the league ID of a league. By default it will return the current live league(2019)"""
 
     with open("leagues.json", "r") as leagueFile:
         leagues = json.load(leagueFile)["api"]["leagues"]
@@ -111,7 +113,7 @@ def getPastFixtures(countryName, leagueName, teamName):
     
     return fixtures
 
-getPastFixtures("England", "Premier League", "Arsenal")
+#getPastFixtures("England", "Premier League", "Arsenal")
 
 
 
@@ -122,7 +124,7 @@ def getUpcomingFixturesForLeague(countryName, leagueName, howMany):
     leagueName : String
     howMany : Integer
 
-    Returns: A 2D list with homeTeamName at 0 and awayTeamName at 1
+    Returns: A list with homeTeamName at 0, awayTeamName at 1 and fixture_id at 2
     """
     upcomingFixtures = []
 
@@ -147,6 +149,140 @@ def getUpcomingFixturesForLeague(countryName, leagueName, howMany):
 
         for fixture in nextFixtures:
             print("{} vs {}".format(fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"]))
-            upcomingFixtures.append([fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"]])
+            upcomingFixtures.append([fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"], fixture["fixture_id"]])
 
     return upcomingFixtures
+
+
+
+def getScoringOdds(fixtureID):
+
+    """
+    Arguments: FixtureID - Int
+    Gets the home team and away team to score odds from MarathonBet (via api-football).
+    Returns: A list with 4 items [HOver05, HUnder05, AOver05, AUnder05]
+    """
+    print(type(fixtureID))
+    #Marathonbet has ID of: 2
+    #labels in api-football: Home team to score a goal id: 43, away team: 44
+    endpointURL = "https://api-football-v1.p.rapidapi.com/v2/odds/fixture/{}/bookmaker/2/labels/43".format(fixtureID)
+
+    rec = urllib.request.Request(endpointURL)
+    #Need to add this since i bought access on RapidAPI
+    rec.add_header("X-RapidAPI-Host", "api-football-v1.p.rapidapi.com")
+    #adding authentication key to access the API-Football API
+    rec.add_header("X-RapidAPI-Key", "1acHO5cH5QmshrLw9WFJXPxKPIgEp1uE4YzjsnGOydel9eubG9")
+
+    #make the request and pass in the Request object
+    with urllib.request.urlopen(rec) as response:
+        #print("Status code from response: {}".format(response.getcode()))
+        #print("Status code from response: {}".format(response.getheaders()))
+        decodedResponse = response.read()
+        
+        dictResponse = json.loads(decodedResponse, encoding = "utf-8")
+        dictResponse = dictResponse["api"]["odds"][0]["bookmakers"][0]["bets"]
+        print(dictResponse)
+        for row in dictResponse:
+            print(row["label_name"])
+            if row["label_id"] == 43:
+                HOver05 = row["values"][0]["odd"]
+                HUnder05 = row["values"][1]["odd"]
+                #print(HOver05)
+                #print(HUnder05)
+
+            if row["label_id"] == 44:
+                AOver05 = row["values"][0]["odd"]
+                AUnder05 = row["values"][1]["odd"]
+                #print(AOver05)
+                #print(AUnder05)
+    
+    return [HOver05, HUnder05, AOver05, AUnder05]
+
+#------------------------------- All functions below here make calls to Pinnacle---------------
+#Edit: Jan 27: Pinnacle functions not currently in use, since Pinny offer odds often only a few
+#hours before matvh, and team names differ from api-football API where stats are gotten from.
+
+
+def getLeagueAndEvent(homeTeam, awayTeam):
+    """
+    Should get the Pinncale LeagueId and EventID for certain match
+    """
+
+    endpointURL = "https://api.pinnacle.com/v1/fixtures?sportId=29"
+
+    rec = urllib.request.Request(endpointURL)
+
+    #encodes to a base64 Bytes object
+    pinncaleCredentials = base64.b64encode(b"IS925238:Maximus_1")
+    #Decodes the Bytes object to string, whic is: SVM5MjUyMzg6TWF4aW11c18x
+    pinncaleCredentials = pinncaleCredentials.decode()
+    
+    #authValue = "Basic " + pinncaleCredentials
+    rec.add_header("Authorization", "Basic {}".format(pinncaleCredentials))
+    rec.add_header("Accept", "application/json")
+
+    with urllib.request.urlopen(rec) as response:
+
+        #print("Status code from response: {}".format(response.getcode()))
+        #print("Status code from response: {}".format(response.getheaders()))
+        decodedResponse = response.read()
+        
+        dictResponse = json.loads(decodedResponse, encoding = "utf-8")
+
+        #print(dictResponse)
+
+        for fixture in dictResponse["league"]:
+            for match in fixture["events"]:
+                if homeTeam in match["home"] and awayTeam in match["away"]:
+                    print("Found match: {}".format(match))
+                    EventID = match["id"]
+                    LeagueID = fixture["id"]
+                    return EventID, LeagueID
+                
+        return None, None
+        #print(type(dictResponse))
+        #print(dictResponse)
+
+def getOdds(leagueID, eventID):
+
+    """
+    Currently gets the under 0.5 goals for both hometeam and awayteam.
+    Returns: An list iwht 2 items, first is hometeam and second item in awayteam
+    """
+
+    underOdds = []
+
+    for i in range(1, 3):
+
+        endpointURL = "https://api.pinnacle.com/v1/line?sportId=29&handicap=0.5&oddsFormat=Decimal&periodNumber=1&betType=TEAM_TOTAL_POINTS&team=Team{}&side=UNDER&leagueId={}&eventId={}".format(i, leagueID, eventID)
+        #endpointURL = "https://api.pinnacle.com/v1/odds?sportId=29&oddsFormat=Decimal&eventIds=" + str(eventID)
+        rec = urllib.request.Request(endpointURL)
+
+        #encodes to a base64 Bytes object
+        pinncaleCredentials = base64.b64encode(b"IS925238:Maximus_1")
+        #Decodes the Bytes object to string, whic is: SVM5MjUyMzg6TWF4aW11c18x
+        pinncaleCredentials = pinncaleCredentials.decode()
+        
+        #authValue = "Basic " + pinncaleCredentials
+        rec.add_header("Authorization", "Basic {}".format(pinncaleCredentials))
+        rec.add_header("Accept", "application/json")
+
+        with urllib.request.urlopen(rec) as response:
+
+            #print("Status code from response: {}".format(response.getcode()))
+            #print("Status code from response: {}".format(response.getheaders()))
+            decodedResponse = response.read()
+            
+            dictResponse = json.loads(decodedResponse, encoding = "utf-8")
+            #print(dictResponse)
+            if dictResponse["status"] == "SUCCESS":
+                under05Price = dictResponse["price"]
+                underOdds.append(under05Price)
+            else:
+                under05Price = None
+                underOdds.append(under05Price)
+            
+    
+    print("Home U 0.5: {}  :  Away U 0.5: {}".format(underOdds[0], underOdds[1]))
+
+    return underOdds
