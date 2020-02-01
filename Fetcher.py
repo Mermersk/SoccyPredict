@@ -103,7 +103,7 @@ def getPastFixtures(countryName, leagueName, teamName):
         
         #filter function with a lambda to filter out upcoming matches, eg: where half time score is None.
         #filter function keeps what evaluates to true and tosses the rest.
-        fixtures = filter(lambda fixture: fixture["score"]["halftime"] is not None, fixtures)
+        fixtures = filter(lambda fixture: fixture["score"]["fulltime"] is not None, fixtures)
         
         #for fixture in fixtures:
             #print("{} vs {}".format(fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"]))
@@ -159,8 +159,9 @@ def getScoringOdds(fixtureID):
 
     """
     Arguments: FixtureID - Int
-    Gets the home team and away team to score odds from MarathonBet (via api-football).
+    Gets the home team and away team to score odds and BTTS yes/no odds from MarathonBet (via api-football).
     Returns: A list with 4 items [HOver05, HUnder05, AOver05, AUnder05]
+             A list with 2 items [bttsYes, bttsNo]
     """
     print(type(fixtureID))
     #Marathonbet has ID of: 2
@@ -180,23 +181,37 @@ def getScoringOdds(fixtureID):
         decodedResponse = response.read()
         
         dictResponse = json.loads(decodedResponse, encoding = "utf-8")
-        dictResponse = dictResponse["api"]["odds"][0]["bookmakers"][0]["bets"]
-        print(dictResponse)
+       
+        try:
+            dictResponse = dictResponse["api"]["odds"][0]["bookmakers"][0]["bets"]
+        except IndexError:
+            return [], []
+
+        #odds values will be zero if they are not found at MarathonBet
+        HOver05 = 0.0
+        HUnder05 = 0.0
+        AOver05 = 0.0
+        AUnder05 = 0.0
+        bttsYes = 0.0
+        bttsNo = 0.0
+
+        #print(dictResponse)
         for row in dictResponse:
             print(row["label_name"])
             if row["label_id"] == 43:
                 HOver05 = row["values"][0]["odd"]
                 HUnder05 = row["values"][1]["odd"]
-                #print(HOver05)
-                #print(HUnder05)
 
             if row["label_id"] == 44:
                 AOver05 = row["values"][0]["odd"]
                 AUnder05 = row["values"][1]["odd"]
-                #print(AOver05)
-                #print(AUnder05)
-    
-    return [HOver05, HUnder05, AOver05, AUnder05]
+
+            if row["label_name"] == "Both Teams Score":
+                bttsYes = row["values"][0]["odd"]
+                bttsNo = row["values"][1]["odd"]
+      
+
+    return [HOver05, HUnder05, AOver05, AUnder05], [bttsYes, bttsNo]
 
 #------------------------------- All functions below here make calls to Pinnacle---------------
 #Edit: Jan 27: Pinnacle functions not currently in use, since Pinny offer odds often only a few
