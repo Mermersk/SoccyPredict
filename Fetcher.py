@@ -165,7 +165,7 @@ def getScoringOdds(fixtureID):
     """
     print(type(fixtureID))
     #Marathonbet has ID of: 2
-    #labels in api-football: Home team to score a goal id: 43, away team: 44
+    
     endpointURL = "https://api-football-v1.p.rapidapi.com/v2/odds/fixture/{}/bookmaker/2/labels/43".format(fixtureID)
 
     rec = urllib.request.Request(endpointURL)
@@ -195,9 +195,9 @@ def getScoringOdds(fixtureID):
         bttsYes = 0.0
         bttsNo = 0.0
 
-        #print(dictResponse)
+        #labels in api-football: Home team to score a goal id: 43, away team to score a goal: 44
         for row in dictResponse:
-            print(row["label_name"])
+            #print(row["label_name"])
             if row["label_id"] == 43:
                 HOver05 = row["values"][0]["odd"]
                 HUnder05 = row["values"][1]["odd"]

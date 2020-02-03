@@ -1,4 +1,5 @@
 import Fetcher as Fetch
+import Utils
 
 #EDIT 27. Jan: Changed to fulltime instead of halftime
 def calculateScoringChance(fixtures, homeORaway, teamName):
@@ -56,20 +57,21 @@ def calculateScoringChance(fixtures, homeORaway, teamName):
     #print("{} {} conceded in {} matches out of total {}"
     #.format(teamName, homeORaway, str(wasGoalConceded), str(totalMatces)))
 
-    #goalScoredDecimalChance
+    #Avoid division by zero error. Anyway if totalMatches is zero, then no analysis can be made.
     if totalMatces == 0:
         return 0, 0
+    
     gsDecimalChance = round(wasGoalScored/totalMatces, 2)
     gcDecimalChance = round(wasGoalConceded/totalMatces, 2)
     #Calculating and printing out scoring stats
     print("Scored in {} matches out {} matches".format(wasGoalScored, totalMatces))
     print("Odds of {} scoring in a {} match: {} {}%"
-    .format(teamName, homeORaway, gsDecimalChance, round((wasGoalScored/totalMatces) * 100)))
+    .format(teamName, homeORaway, gsDecimalChance, round(Utils.fromDecimalProbToPercentage(gsDecimalChance))))
 
     #Calculating and printing out conceded stats
     print("Conceded in {} matches out of {} matches".format(wasGoalConceded, totalMatces))
     print("Odds of {} conceding in a {} match: {} {}%"
-    .format(teamName, homeORaway, gcDecimalChance, round((wasGoalConceded/totalMatces) * 100)))
+    .format(teamName, homeORaway, gcDecimalChance, round(Utils.fromDecimalProbToPercentage(gcDecimalChance))))
 
     print("\n")
 
@@ -109,11 +111,11 @@ def WillThereBeGoal(homeTeamSD, awayTeamSD):
     #over is odds of it being over 0.5 goals
     over05 = 1.0 - under05
 
-    under05Percentage = under05 * 100
-    over05Percentage = over05 * 100
+    under05Percentage = Utils.fromDecimalProbToPercentage(under05)
+    over05Percentage = Utils.fromDecimalProbToPercentage(over05)
 
-    overDecimalBettingOdds = round(100 / over05Percentage, 3)
-    underDecimalBettingOdds = round(100 / under05Percentage, 3)
+    overDecimalBettingOdds = round(Utils.fromPercentageToOdds(over05Percentage), 3)
+    underDecimalBettingOdds = round(Utils.fromPercentageToOdds(under05Percentage), 3)
 
     print("Over 0.5: {} - Under 0.5: {}".format(overDecimalBettingOdds, underDecimalBettingOdds))
 
@@ -142,20 +144,19 @@ def drawPredict(homeTeamSD, awayTeamSD):
     #over is odds of it being over 0.5 goals
     highGoalTally = 1.0 - lowGoalTally
 
-    lowGoalTallyPercentage = lowGoalTally * 100
-    highGoalTallyPercentage = highGoalTally * 100
+    lowGoalTallyPercentage = Utils.fromDecimalProbToPercentage(lowGoalTally)
+    highGoalTallyPercentage = Utils.fromDecimalProbToPercentage(highGoalTally)
 
     #So that I dont get ZeroDivisonError, This will happen when the chance is 0% 
     #If so then I multiply by 0.1 thiss will return odds of 1000 (almost impossible)
     if (lowGoalTallyPercentage == 0.0):
         lowGoalDecimalBettingOdds = 0.1
     else:
-        lowGoalDecimalBettingOdds = round(100 / lowGoalTallyPercentage, 3)
+        lowGoalDecimalBettingOdds = round(Utils.fromPercentageToOdds(lowGoalTallyPercentage), 3)
 
 
-    highGoalDecimalBettingOdds = round(100 / highGoalTallyPercentage, 3)
+    highGoalDecimalBettingOdds = round(Utils.fromPercentageToOdds(highGoalTallyPercentage), 3)
     
-
     #print("Over 0.5: {} - Under 0.5: {}".format(highGoalDecimalBettingOdds, lowGoalDecimalBettingOdds))
 
     return highGoalDecimalBettingOdds, lowGoalDecimalBettingOdds
@@ -168,14 +169,13 @@ def bttsPredict(homeTeamSD, awayTeamSD):
     bttsYes = homeTeamSD * awayTeamSD
     bttsNo = 1.0 - bttsYes
 
-    bttsYesOdds = round(1 / bttsYes, 3)
-    bttsNoOdds = round(1 / bttsNo, 3)
+    bttsYesOdds = round(Utils.fromDecimalProbToOdds(bttsYes), 3)
+    bttsNoOdds = round(Utils.fromDecimalProbToOdds(bttsNo), 3)
 
     return bttsYesOdds, bttsNoOdds
 
 def predictOne(countryName, leagueName, homeTeam, awayTeam):
 
-    labels = []
     """
     Predicts The chance of homeTeam and awayTeam to score 1 goal in the first half.
     Arguments:
@@ -187,6 +187,9 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     Returns: list bettingLabel: Contains odds/probability for both team to score/not to score
              list bettingLabelBTTS: Contains odds for Both teams to score yes/no
     """
+    #Represent all labels, will contain other lists(f.ex bettingLabelDraw)
+    labels = []
+
     homeTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, homeTeam)
     awayTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, awayTeam)
 
@@ -198,13 +201,16 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     awayDOddsOfScoring = (awayScoring + homeConceding) / 2.0
 
     #Home team Percentage odds of scoring at least 1 goal
-    homePOddsOfScoring = homeDOddsOfScoring * 100
-    awayPOddsOfScoring = awayDOddsOfScoring * 100
-
+    homePOddsOfScoring = Utils.fromDecimalProbToPercentage(homeDOddsOfScoring)
+    awayPOddsOfScoring = Utils.fromDecimalProbToPercentage(awayDOddsOfScoring)
     awayPOddsOfCleanSheet = round(100 - homePOddsOfScoring)
     homePOddsOfCleanSheet = round(100 - awayPOddsOfScoring)
-
-    
+    #Converting to european betting odds
+    homeBettingOddsOfScoring = round(Utils.fromPercentageToOdds(homePOddsOfScoring), 3)
+    awayBettingOddsOfScoring = round(Utils.fromPercentageToOdds(awayPOddsOfScoring), 3)
+    homeBettingOddsOfCleanSheet = round(Utils.fromPercentageToOdds(homePOddsOfCleanSheet), 3)
+    awayBettingOddsOfCleanSheet = round(Utils.fromPercentageToOdds(awayPOddsOfCleanSheet), 3)
+ 
     noDraw, yesDraw = drawPredict(homeDOddsOfScoring, awayDOddsOfScoring)
 
     bettingLabelDraw = [leagueName, homeTeam, awayTeam, homePOddsOfScoring, awayPOddsOfScoring, noDraw, yesDraw, homePOddsOfScoring - awayPOddsOfScoring]
@@ -213,20 +219,20 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
 
     bettingLabelBTTS = [leagueName, homeTeam, awayTeam, bttsYes, bttsNo]
     
+    #These 2 if statements are simply to prevent ZeroDivisionError (Very rare that these 2 variables are 0)
     if (awayPOddsOfCleanSheet == 0):
         awayPOddsOfCleanSheet = 1
-
     if (homePOddsOfCleanSheet == 0):
         homePOddsOfCleanSheet = 1
 
-    bettingLabel = [leagueName, homeTeam, awayTeam, round(100/homePOddsOfScoring, 3), round(100/awayPOddsOfCleanSheet, 3), round(100/awayPOddsOfScoring, 3), round(100/homePOddsOfCleanSheet, 3)]
+    #Change 3. feb: Taking out all under-bets, only want over0.5, betting label too big...
+    bettingLabel = [leagueName, homeTeam, awayTeam, homeBettingOddsOfScoring, awayBettingOddsOfScoring]
 
     print("{} to score against opponent is: {}% Betting odds: {} - Under 0.5: {}"
-    .format(homeTeam, homePOddsOfScoring, round(100/homePOddsOfScoring, 3), round(100/awayPOddsOfCleanSheet, 3)))
-    
+    .format(homeTeam, homePOddsOfScoring, homeBettingOddsOfScoring, awayBettingOddsOfCleanSheet))
     
     print("{} to score against opponent is: {}% Betting odds: {} - Under 0.5: {}"
-    .format(awayTeam, awayPOddsOfScoring, round(100/awayPOddsOfScoring, 3), round(100/homePOddsOfCleanSheet, 3)))
+    .format(awayTeam, awayPOddsOfScoring, awayBettingOddsOfScoring, homeBettingOddsOfCleanSheet))
 
     labels.append(bettingLabel)
     labels.append(bettingLabelBTTS)
