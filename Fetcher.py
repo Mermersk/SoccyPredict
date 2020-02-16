@@ -75,7 +75,7 @@ def getPastFixtures(countryName, leagueName, teamName):
     """
     Gets all fixtures for specified Team, then filters out all non-played results and returns the past matches
     Parameters: All strings
-    Returns: A dictionary with all fixtures for the season for specified team in specified leauge. 
+    Returns: A list with all fixtures for the season for specified team in specified leauge. 
     """    
 
     leagueID = getLeagueID(countryName, leagueName)
@@ -100,10 +100,13 @@ def getPastFixtures(countryName, leagueName, teamName):
         
         fixtures = json.loads(decodedfixtures, encoding = "utf-8")
         fixtures = fixtures["api"]["fixtures"]
-        
+
         #filter function with a lambda to filter out upcoming matches, eg: where half time score is None.
         #filter function keeps what evaluates to true and tosses the rest.
-        fixtures = filter(lambda fixture: fixture["score"]["fulltime"] is not None, fixtures)
+        #Note 16 feb: wrap filter in list method, so I get back a list but not a "filter object"
+        fixtures = list(filter(lambda fixture: fixture["score"]["fulltime"] is not None, fixtures))
+
+        #fixtures = {k:v is not None for (k,v) in fixtures.items()}
         
         #for fixture in fixtures:
             #print("{} vs {}".format(fixture["homeTeam"]["team_name"], fixture["awayTeam"]["team_name"]))

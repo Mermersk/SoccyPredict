@@ -50,15 +50,20 @@ def _newTableOrder(index):
     """
     headerIndex = 0
     for bettingLabels in allLabels:
-
-        try:
-            bettingLabels.sort(key = lambda nestedList: nestedList[index])
-        except TypeError:
-            pass
+        if (index < len(bettingLabels[0])):
+            try:
+                bettingLabels.sort(key = lambda nestedList: nestedList[index])
+            except TypeError:
+                pass
         
         display(bettingLabels, allLabelsHeaders[headerIndex])
         headerIndex += 1
         
+
+def filterOut(threshold, bl, index):
+    filteredBL = filter(lambda odds: float(odds) >= threshold, bl[0][index])
+    display(filteredBL, allLabelsHeaders[0])
+
 
 
 def appLoop():
@@ -69,6 +74,12 @@ def appLoop():
     while stop is not True:
         i = input("Insert index-number to be sorted on or q to quit: ")
         if i == "q":
+            stop = True
+            break
+        if i == "f":
+            ii = input("Insert which MO to filter on")
+            iii = int(ii)
+            filterOut(1.4, allLabels, iii)
             stop = True
             break
         index = int(i)

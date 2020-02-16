@@ -6,7 +6,7 @@ def calculateScoringChance(fixtures, homeORaway, teamName):
     
     """
     Arguments:
-    fixtures : Dictionary - With past fixtures
+    fixtures : List (containing other lists and dicts) - With past fixtures
     homeORaway: String - Wether we are looking at home or away form of team
     teamName: String - Name of team we are calculalating scoring/conceding chance
 
@@ -76,6 +76,75 @@ def calculateScoringChance(fixtures, homeORaway, teamName):
     print("\n")
 
     return gsDecimalChance, gcDecimalChance
+
+
+def calculateWinDrawChance(fixtures, homeORaway, teamName):
+
+    totalMatches = 0
+    winDrawScore = 0
+
+    winPoints = 1.0
+    drawPoints = 0.8
+
+    maxPoints = 0
+
+    for fixture in fixtures:
+
+        if (homeORaway == "home"):
+            if (teamName == fixture["homeTeam"]["team_name"]):
+
+                fullTimeScore = fixture["score"]["fulltime"]
+                homeTeamScore = int(fullTimeScore[0])
+                awayTeamScore = int(fullTimeScore[2])
+
+                maxPoints += winPoints
+                totalMatches += 1
+
+                outcome = determineOutcome(homeTeamScore, awayTeamScore)
+
+                if (outcome == "homeWin"):
+                    winDrawScore += winPoints
+
+                if (outcome == "draw"):
+                    winDrawScore += drawPoints
+
+        elif (homeORaway == "away"):
+            if (teamName == fixture["awayTeam"]["team_name"]):
+
+                fullTimeScore = fixture["score"]["fulltime"]
+                homeTeamScore = int(fullTimeScore[0])
+                awayTeamScore = int(fullTimeScore[2])
+
+                maxPoints += winPoints
+                totalMatches += 1
+
+                outcome = determineOutcome(homeTeamScore, awayTeamScore)
+
+                if (outcome == "awayWin"):
+                    winDrawScore += winPoints
+
+                if (outcome == "draw"):
+                    winDrawScore += drawPoints
+
+
+    #maxPointsDecimalProb = maxPoints/totalMatches
+
+    winDrawScoreDecimalProb = round(winDrawScore/totalMatches, 3)
+
+    print("{} Has a: {} chance of DC".format(teamName, winDrawScoreDecimalProb))
+
+    return winDrawScoreDecimalProb
+
+
+
+def determineOutcome(homeTeamScore, awayTeamScore):
+    if (homeTeamScore > awayTeamScore):
+        return "homeWin"
+
+    if (homeTeamScore < awayTeamScore):
+        return "awayWin"
+
+    return "draw"
 
 
 """
@@ -184,8 +253,7 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     homeTeam: String
     awayTeam: String
 
-    Returns: list bettingLabel: Contains odds/probability for both team to score/not to score
-             list bettingLabelBTTS: Contains odds for Both teams to score yes/no
+    Returns: list labels,  other lists of bettinglabels.
     """
     #Represent all labels, will contain other lists(f.ex bettingLabelDraw)
     labels = []
@@ -193,8 +261,16 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     homeTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, homeTeam)
     awayTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, awayTeam)
 
+    homeDCChance = calculateWinDrawChance(homeTeamFixtures, "home", homeTeam)
+    awayDCChance = calculateWinDrawChance(awayTeamFixtures, "away", awayTeam) 
+
+    #print(homeTeamFixtures)
+
     homeScoring, homeConceding = calculateScoringChance(homeTeamFixtures, "home", homeTeam)
     awayScoring, awayConceding = calculateScoringChance(awayTeamFixtures, "away", awayTeam)
+
+    #print(homeTeamFixtures)
+    #print("homescoring: {}".format(homeScoring))
 
     #Home team odds of scoring in decimal
     homeDOddsOfScoring = (homeScoring + awayConceding) / 2.0
@@ -205,6 +281,13 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     awayPOddsOfScoring = Utils.fromDecimalProbToPercentage(awayDOddsOfScoring)
     awayPOddsOfCleanSheet = round(100 - homePOddsOfScoring)
     homePOddsOfCleanSheet = round(100 - awayPOddsOfScoring)
+
+    #These 2 if statements are simply to prevent ZeroDivisionError (Very rare that these 2 variables are 0)
+    if (awayPOddsOfCleanSheet == 0):
+        awayPOddsOfCleanSheet = 1
+    if (homePOddsOfCleanSheet == 0):
+        homePOddsOfCleanSheet = 1
+
     #Converting to european betting odds
     homeBettingOddsOfScoring = round(Utils.fromPercentageToOdds(homePOddsOfScoring), 3)
     awayBettingOddsOfScoring = round(Utils.fromPercentageToOdds(awayPOddsOfScoring), 3)
@@ -218,12 +301,8 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     bttsYes, bttsNo = bttsPredict(homeDOddsOfScoring, awayDOddsOfScoring)
 
     bettingLabelBTTS = [leagueName, homeTeam, awayTeam, bttsYes, bttsNo]
-    
-    #These 2 if statements are simply to prevent ZeroDivisionError (Very rare that these 2 variables are 0)
-    if (awayPOddsOfCleanSheet == 0):
-        awayPOddsOfCleanSheet = 1
-    if (homePOddsOfCleanSheet == 0):
-        homePOddsOfCleanSheet = 1
+
+    bettingLabelDC = [leagueName, homeTeam, awayTeam, homeDCChance, awayDCChance]   
 
     #Change 3. feb: Taking out all under-bets, only want over0.5, betting label too big...
     bettingLabel = [leagueName, homeTeam, awayTeam, homeBettingOddsOfScoring, awayBettingOddsOfScoring]
@@ -237,5 +316,6 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     labels.append(bettingLabel)
     labels.append(bettingLabelBTTS)
     labels.append(bettingLabelDraw)
+    labels.append(bettingLabelDC)
 
     return labels
