@@ -10,7 +10,7 @@ import time
 bettingLabelHeaders = ["League:", "HomeTeam:", "AwayTeam:", "H - Over 0.5:", "H - O 0.5 M", "HO Diff:", "H Bet $: ", "A - Over 0.5:", "A - O 0.5 M", "AO Diff:", "A Bet $"]#, "1H Over 0.5", "1H Under 0.5:", "H - Under 0.5 Pinny", "A - Under 0.5 Pinny", "H - Diff", "A - Diff"]
 bettingLabelBTTSHeaders = ["League:", "HomeTeam:", "AwayTeam:", "BTTS Yes:", "BTTS Yes M:", "BTTS Yes Diff:", "BTTS No:", "BTTS No M:", "BTTS No Diff:"]
 bettingLabelDrawHeaders = ["League:", "HomeTeam:", "AwayTeam:", "H Scoring Chance", "A Scoring Chance", "Draw No", "Draw Yes", "Diff Scoring capacity"]
-bettingLabelDCHeaders = ["League:", "HomeTeam:", "AwayTeam:", "HomeTeam DC", "AwayTeam DC"]
+bettingLabelDCHeaders = ["League:", "HomeTeam:", "AwayTeam:", "HomeTeam DC", "H-DC-M", "H Diff", "AwayTeam DC", "A-DC-M", "A Diff"]
 #Global Current Bankroll
 bankroll = 106.67
 
@@ -19,70 +19,77 @@ def main():
     #Matches I want to check today, in the format:
     # countryName - String, leagueName - String, howmany - Integer
     todaysMatches = [
-        #["England", "National League - North", 1],
+        #["England", "National League - South", 2],
+        #["Denmark", "Superligaen", 1],
+        #["Qatar", "2nd Division League", 4],
+        #["Saudi-Arabia", "Division 1", 5],
+        #["England", "National League - North", 4],
         #["Tunisia", "Ligue Professionnelle 1", 3],
-        #["India", "I-League", 1],
+        #["India", "I-League", 2],
         #["Morocco", "Botola Pro", 2],
-        #["Algeria", "Ligue 1", 1],
+        ["Algeria", "Ligue 1", 7],
+        #["Algeria", "Ligue 2", 3],
         #["Hungary", "NB I", 1],
         #["United-Arab-Emirates", "Arabian Gulf League", 1],
         #["Poland", "Ekstraklasa", 2],
         #["Iran", "Persian Gulf Cup", 6],
         #["South-Africa", "Premier Soccer League", 2],
         #["Qatar", "Stars League", 2],
-        #["Saudi-Arabia", "Pro League", 2],
+        
+        #["Saudi-Arabia", "Pro League", 3],
         #["Switzerland", "Challenge League", 1],
         #["Spain", "Segunda B - Group 1", 9],
         #["Spain", "Segunda B - Group 2", 5],
         #["Spain", "Segunda B - Group 3", 9],
         #["Spain", "Segunda B - Group 4", 9],
-        #["Israel", "Liga Leumit", 6],
-        #["Italy", "Serie C", 1],
-        #["France", "Ligue 2", 7],
-        #["France", "Ligue 1", 4],
-        #["France", "National", 9],
+        #["Israel", "Liga Leumit", 5],
+        ["Italy", "Serie C", 10],
+        #["France", "Ligue 2", 8],
+        #["France", "Ligue 1", 2],
+        ["France", "National", 1],
         #["Switzerland", "Super League", 2],
         #["Northern-Ireland", "Championship", 2],
         #["Northern-Ireland", "Premiership", 4],
-        #["Scotland", "League One", 4],
+        #["Scotland", "League One", 1],
         #["Scotland", "League Two", 5],
         
-        #["Portugal", "Liga de Honra", 4],
-        #["Portugal", "Primeira Liga", 4],
+        #["Portugal", "Liga de Honra", 1],
+        #["Portugal", "Primeira Liga", 1],
          
         #["Egypt", "Premier League", 3],
         
-        #["Cyprus", "1. Division", 3],
-        #["Germany", "Bundesliga 2", 3],
-        #["Germany", "Bundesliga 1", 2],
-        #["Germany", "Liga 3", 2],
-        #["Spain", "Primera Division", 2],
-        ["Spain", "Segunda Division", 2],
+        ["Cyprus", "1. Division", 2],
+        #["Germany", "Bundesliga 2", 2],
+        ["Germany", "Bundesliga 1", 5],
+        ["Germany", "Liga 3", 6],
+        ["Spain", "Primera Division", 4],
+        #["Spain", "Segunda Division", 1],
         #["Egypt", "Premier League", 1],
         #["Belgium", "Jupiler Pro League", 1],
-        #["Israel", "Ligat ha'Al", 2],
+        #["Israel", "Ligat ha'Al", 1],
         
-        #["Netherlands", "Eerste Divisie", 1],
-        #["Netherlands", "Eredivisie", 5],
+        #["Netherlands", "Eerste Divisie", 8],
+        #["Netherlands", "Eredivisie", 1],
         #["Scotland", "Championship", 2],
-        #["Scotland", "Premiership", 3],
-        #["Italy", "Serie A", 6],
+        ["Scotland", "Premiership", 1],
+        #["Italy", "Serie A", 1],
         
-        #["Italy", "Serie B", 1],
+        ["Italy", "Serie B", 4],
 
-        #["Greece", "Super League", 2],
+        #["Greece", "Super League", 1],
         #["India", "Indian Super League", 1],
-        #["England", "Championship", 11],
-        #["England", "League One", 11],
-        #["England", "League Two", 12],
-        #["England", "National League", 12],
-        #["England", "Premier League", 2],
+        ["England", "Championship", 11],
+        ["England", "League One", 11],
+        ["England", "League Two", 12],
+        ["England", "National League", 12],
+        ["England", "Premier League", 6],
         
         
         #["Oman", "Professional League", 2],
 
-        #["Turkey", " Super Lig", 3],
-        #["Turkey", "TFF 1. Lig", 4],
+        ["Turkey", " Super Lig", 3],
+        ["Turkey", "TFF 1. Lig", 3],
+        #["Turkey", "TFF 2. Lig", 17],
         
         #["Australia", "A-League", 2],
 
@@ -108,6 +115,23 @@ def main():
             bettingLabelDC = allLabels[3]
 
             marketOdds, marketOddsBTTS = Fetch.getScoringOdds(fixture[2])
+            homeDCOdds, awayDCOdds = Fetch.getDCOdds(fixture[2])
+            
+
+            bettingLabelDC.insert(4, homeDCOdds)
+            bettingLabelDC.insert(7, awayDCOdds)
+            if (homeDCOdds == 0.0 or awayDCOdds == 0.0):
+                bettingLabelsDC.append(bettingLabelDC)
+                continue
+
+              #-------------------------Double chance insertions here
+            print("{} |||||||| {}".format(homeDCOdds, bettingLabelDC[3]))
+            print("{} |||||||| {}".format(awayDCOdds, bettingLabelDC[6]))
+            
+            bettingLabelDC.insert(5, float(homeDCOdds) - float(bettingLabelDC[3]))
+            bettingLabelDC.insert(8, float(awayDCOdds) - float(bettingLabelDC[6]))
+
+            bettingLabelsDC.append(bettingLabelDC)
 
             #if not marketOdds, will detect if list is empty! If not available, then dont make a label for that fixture
             if not marketOdds:
@@ -140,7 +164,7 @@ def main():
             bettingLabelsBTTS.append(bettingLabelBTTS)
             bettingLabels.append(bettingLabel)
             bettingLabelsDraw.append(bettingLabelDraw)
-            bettingLabelsDC.append(bettingLabelDC)
+            
             #time.sleep(0.1)
 
     #print(bettingLabelsDC)

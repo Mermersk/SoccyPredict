@@ -78,62 +78,93 @@ def calculateScoringChance(fixtures, homeORaway, teamName):
     return gsDecimalChance, gcDecimalChance
 
 
-def calculateWinDrawChance(fixtures, homeORaway, teamName):
+def calculateWinDrawChance(homeTeam, awayTeam, homeTeamFixtures, awayTeamFixtures):
 
     totalMatches = 0
-    winDrawScore = 0
+    
+    homeWins = 0
+    homeDraws = 0
+    homeLoss = 0
+    awayWins = 0
+    awayDraws = 0
+    awayLoss = 0
 
-    winPoints = 1.0
-    drawPoints = 0.8
+    homeORaway = ["home", "away"]
 
-    maxPoints = 0
+    for hORa in homeORaway:
 
-    for fixture in fixtures:
+        if (hORa == "home"):
+            fixtures = homeTeamFixtures
+        else:
+            fixtures = awayTeamFixtures
 
-        if (homeORaway == "home"):
-            if (teamName == fixture["homeTeam"]["team_name"]):
+        for fixture in fixtures:
+            
+            if (hORa == "home"):
+                if (homeTeam == fixture["homeTeam"]["team_name"]):
 
-                fullTimeScore = fixture["score"]["fulltime"]
-                homeTeamScore = int(fullTimeScore[0])
-                awayTeamScore = int(fullTimeScore[2])
+                    fullTimeScore = fixture["score"]["fulltime"]
+                    homeTeamScore = int(fullTimeScore[0])
+                    awayTeamScore = int(fullTimeScore[2])
 
-                maxPoints += winPoints
-                totalMatches += 1
+                    totalMatches += 1
 
-                outcome = determineOutcome(homeTeamScore, awayTeamScore)
+                    outcome = determineOutcome(homeTeamScore, awayTeamScore)
 
-                if (outcome == "homeWin"):
-                    winDrawScore += winPoints
+                    if (outcome == "homeWin"):
+                        homeWins += 1
 
-                if (outcome == "draw"):
-                    winDrawScore += drawPoints
+                    if (outcome == "draw"):
+                        homeDraws += 1
 
-        elif (homeORaway == "away"):
-            if (teamName == fixture["awayTeam"]["team_name"]):
+                    if (outcome == "awayWin"):
+                        homeLoss += 1
 
-                fullTimeScore = fixture["score"]["fulltime"]
-                homeTeamScore = int(fullTimeScore[0])
-                awayTeamScore = int(fullTimeScore[2])
+            elif (hORa == "away"):
+                if (awayTeam == fixture["awayTeam"]["team_name"]):
 
-                maxPoints += winPoints
-                totalMatches += 1
+                    fullTimeScore = fixture["score"]["fulltime"]
+                    homeTeamScore = int(fullTimeScore[0])
+                    awayTeamScore = int(fullTimeScore[2])
 
-                outcome = determineOutcome(homeTeamScore, awayTeamScore)
+                    totalMatches += 1
 
-                if (outcome == "awayWin"):
-                    winDrawScore += winPoints
+                    outcome = determineOutcome(homeTeamScore, awayTeamScore)
 
-                if (outcome == "draw"):
-                    winDrawScore += drawPoints
+                    if (outcome == "awayWin"):
+                        awayWins += 1
 
+                    if (outcome == "draw"):
+                        awayDraws += 1
+
+                    if (outcome == "homeWin"):
+                        awayLoss += 1
+
+    #The occurence of home Team winning. based on both the amount of hometeam wins and awayteam losses.
+    homeWinOccurence = homeWins + awayLoss
+    drawOccurence = homeDraws + awayDraws
+    awayWinOccurence = awayWins + homeLoss
+
+    #adding occurences togehter for Double chance bets
+    homeWinAndDraw = homeWinOccurence + drawOccurence
+    awayWinAndDraw = awayWinOccurence + drawOccurence
+
+    #Getting the probability in decimal format.
+    #I divide by total amount of matches both teams have played.
+    #homeTeamDC and awayTeamSC will both together be more than 100% since draw is included in both bets.
+    homeTeamDC = round(homeWinAndDraw / totalMatches, 3)
+    awayTeamDC = round(awayWinAndDraw / totalMatches, 3)
+
+    #drawProb = drawOccurence / totalMatches
 
     #maxPointsDecimalProb = maxPoints/totalMatches
+    print("Games played both teams: {}".format(totalMatches))
+    print("homeWins: {} homeDraws: {} homeLoss: {} awayWins: {} awayDraws: {} awayLoss: {}".format(homeWins, homeDraws, homeLoss, awayWins, awayDraws, awayLoss))
+    print("{} vs {} DC prediction: {} vs {}".format(homeTeam, awayTeam, homeTeamDC, awayTeamDC))
+    #print("Draw chance: {}".format(drawProb))
+   
 
-    winDrawScoreDecimalProb = round(winDrawScore/totalMatches, 3)
-
-    print("{} Has a: {} chance of DC".format(teamName, winDrawScoreDecimalProb))
-
-    return winDrawScoreDecimalProb
+    return homeTeamDC, awayTeamDC
 
 
 
@@ -261,9 +292,13 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     homeTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, homeTeam)
     awayTeamFixtures = Fetch.getPastFixtures(countryName, leagueName, awayTeam)
 
-    homeDCChance = calculateWinDrawChance(homeTeamFixtures, "home", homeTeam)
-    awayDCChance = calculateWinDrawChance(awayTeamFixtures, "away", awayTeam) 
+    homeDCChance, awayDCChance = calculateWinDrawChance(homeTeam, awayTeam, homeTeamFixtures, awayTeamFixtures)
 
+    #if (awayDCChance < 0.001):
+        #awayDCChance = 0.001
+
+    #if (homeDCChance < 0.001):
+        #homeDCChance = 0.001
     #print(homeTeamFixtures)
 
     homeScoring, homeConceding = calculateScoringChance(homeTeamFixtures, "home", homeTeam)
@@ -302,7 +337,7 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
 
     bettingLabelBTTS = [leagueName, homeTeam, awayTeam, bttsYes, bttsNo]
 
-    bettingLabelDC = [leagueName, homeTeam, awayTeam, homeDCChance, awayDCChance]   
+    bettingLabelDC = [leagueName, homeTeam, awayTeam, round(Utils.fromDecimalProbToOdds(homeDCChance), 2), round(Utils.fromDecimalProbToOdds(awayDCChance), 2)]   
 
     #Change 3. feb: Taking out all under-bets, only want over0.5, betting label too big...
     bettingLabel = [leagueName, homeTeam, awayTeam, homeBettingOddsOfScoring, awayBettingOddsOfScoring]

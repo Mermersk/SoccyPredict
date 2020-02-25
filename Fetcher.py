@@ -216,6 +216,54 @@ def getScoringOdds(fixtureID):
 
     return [HOver05, HUnder05, AOver05, AUnder05], [bttsYes, bttsNo]
 
+
+
+def getDCOdds(fixtureID):
+
+    #LabelID for double chance is 12
+    endpointURL = "https://api-football-v1.p.rapidapi.com/v2/odds/fixture/{}/bookmaker/2/labels/12".format(fixtureID)
+
+    rec = urllib.request.Request(endpointURL)
+    #Need to add this since i bought access on RapidAPI
+    rec.add_header("X-RapidAPI-Host", "api-football-v1.p.rapidapi.com")
+    #adding authentication key to access the API-Football API
+    rec.add_header("X-RapidAPI-Key", "1acHO5cH5QmshrLw9WFJXPxKPIgEp1uE4YzjsnGOydel9eubG9")
+
+    with urllib.request.urlopen(rec) as response:
+
+        decodedResponse = response.read()
+        #print(type(decodedResponse))
+
+        dictResponse = json.loads(decodedResponse, encoding = "utf-8")
+
+        try:
+            dictResponse = dictResponse["api"]["odds"][0]["bookmakers"][0]["bets"]
+        except IndexError:
+            return 0.0, 0.0
+
+        homeDC = 0.0
+        awayDC = 0.0
+
+        #print(type(dictResponse))
+        #print(dictResponse)
+
+        for row in dictResponse:
+            if (row["label_name"] == "Double Chance"):
+                print(row)
+                try:
+                    homeDC = row["values"][0]["odd"]
+                    awayDC = row["values"][2]["odd"]
+                except IndexError:
+                    return 0.0, 0.0
+
+
+    return homeDC, awayDC
+
+
+
+
+
+
 #------------------------------- All functions below here make calls to Pinnacle---------------
 #Edit: Jan 27: Pinnacle functions not currently in use, since Pinny offer odds often only a few
 #hours before matvh, and team names differ from api-football API where stats are gotten from.

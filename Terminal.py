@@ -61,7 +61,7 @@ def _newTableOrder(index):
         
 
 def filterOut(threshold, bl, index):
-    filteredBL = filter(lambda odds: float(odds) >= threshold, bl[0][index])
+    filteredBL = list(filter(lambda odds: float(odds) >= threshold, bl[0][index]))
     display(filteredBL, allLabelsHeaders[0])
 
 
