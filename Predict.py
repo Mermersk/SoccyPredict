@@ -115,7 +115,7 @@ def calculateWinDrawChance(homeTeam, awayTeam, homeTeamFixtures, awayTeamFixture
                         homeWins += 1
 
                     if (outcome == "draw"):
-                        homeDraws += 1
+                        homeDraws += 0.8
 
                     if (outcome == "awayWin"):
                         homeLoss += 1
@@ -135,7 +135,7 @@ def calculateWinDrawChance(homeTeam, awayTeam, homeTeamFixtures, awayTeamFixture
                         awayWins += 1
 
                     if (outcome == "draw"):
-                        awayDraws += 1
+                        awayDraws += 0.8
 
                     if (outcome == "homeWin"):
                         awayLoss += 1
@@ -166,6 +166,17 @@ def calculateWinDrawChance(homeTeam, awayTeam, homeTeamFixtures, awayTeamFixture
 
     return homeTeamDC, awayTeamDC
 
+
+
+def drawPredict2(homeTeamDC, awayTeamDC):
+
+    diff = abs(homeTeamDC - awayTeamDC)
+
+    if (diff < 0.150):
+        return diff
+    else:
+        return 1.0
+   
 
 
 def determineOutcome(homeTeamScore, awayTeamScore):
@@ -294,6 +305,12 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
 
     homeDCChance, awayDCChance = calculateWinDrawChance(homeTeam, awayTeam, homeTeamFixtures, awayTeamFixtures)
 
+    d = drawPredict2(homeDCChance, awayDCChance)
+
+    if (d is not 1.0):
+        bettingLabelDraw = [leagueName, homeTeam, awayTeam, d]
+
+
     #if (awayDCChance < 0.001):
         #awayDCChance = 0.001
 
@@ -329,9 +346,9 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     homeBettingOddsOfCleanSheet = round(Utils.fromPercentageToOdds(homePOddsOfCleanSheet), 3)
     awayBettingOddsOfCleanSheet = round(Utils.fromPercentageToOdds(awayPOddsOfCleanSheet), 3)
  
-    noDraw, yesDraw = drawPredict(homeDOddsOfScoring, awayDOddsOfScoring)
+    #noDraw, yesDraw = drawPredict(homeDOddsOfScoring, awayDOddsOfScoring)
 
-    bettingLabelDraw = [leagueName, homeTeam, awayTeam, homePOddsOfScoring, awayPOddsOfScoring, noDraw, yesDraw, homePOddsOfScoring - awayPOddsOfScoring]
+    #bettingLabelDraw = [leagueName, homeTeam, awayTeam, homePOddsOfScoring, awayPOddsOfScoring, noDraw, yesDraw, homePOddsOfScoring - awayPOddsOfScoring]
 
     bttsYes, bttsNo = bttsPredict(homeDOddsOfScoring, awayDOddsOfScoring)
 

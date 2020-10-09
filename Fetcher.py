@@ -77,6 +77,8 @@ def getPastFixtures(countryName, leagueName, teamName):
     Parameters: All strings
     Returns: A list with all fixtures for the season for specified team in specified leauge. 
     """    
+    #if (teamName == "Nuova Cosenza"):
+        #teamName = "Cosenza"
 
     leagueID = getLeagueID(countryName, leagueName)
     teamID = getTeamID(teamName, leagueID)
