@@ -33,10 +33,10 @@ def saveAsJSON(dictionary):
 def getLeagueID(countryName, leagueName):
     """Finds the league ID of a league. By default it will return the current live league(2019)"""
 
-    with open("leagues.json", "r") as leagueFile:
+    with open("l20.json", "r") as leagueFile:
         leagues = json.load(leagueFile)["api"]["leagues"]
         for league in leagues:
-            if (league["country"] == countryName and league["season"] == 2019 and league["name"] == leagueName):
+            if (league["country"] == countryName and league["season"] == 2020 and league["name"] == leagueName):
                 print(league["country"])
                 return league["league_id"]
             
@@ -134,22 +134,24 @@ def getUpcomingFixturesForLeague(countryName, leagueName, howMany):
     upcomingFixtures = []
 
     leagueID = getLeagueID(countryName, leagueName)
+    print(leagueID)
     endpointURL = "https://api-football-v1.p.rapidapi.com/v2/fixtures/league/{}/next/{}".format(leagueID, howMany)
 
     rec = urllib.request.Request(endpointURL)
+    
     #Need to add this since i bought access on RapidAPI
     rec.add_header("X-RapidAPI-Host", "api-football-v1.p.rapidapi.com")
     #adding authentication key to access the API-Football API
     rec.add_header("X-RapidAPI-Key", "1acHO5cH5QmshrLw9WFJXPxKPIgEp1uE4YzjsnGOydel9eubG9")
-
+    print(rec.get_method())
     #make the request and pass in the Request object
     with urllib.request.urlopen(rec) as response:
         #print("Status code from response: {}".format(response.getcode()))
         #print("Status code from response: {}".format(response.getheaders()))
         decodedfixtures = response.read()
-        
+        print(decodedfixtures)
         fixtures = json.loads(decodedfixtures, encoding = "utf-8")
-
+        print(fixtures)
         nextFixtures = fixtures["api"]["fixtures"]
 
         for fixture in nextFixtures:

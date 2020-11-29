@@ -19,7 +19,7 @@ def main():
     #Matches I want to check today, in the format:
     # countryName - String, leagueName - String, howmany - Integer
     todaysMatches = [
-        ["Norway", "Eliteserien", 2]
+        #["Norway", "Eliteserien", 5]
         #["England", "National League - South", 2],
         #["Denmark", "Superligaen", 1],
         #["Denmark", "Viasat Divisionen", 2],
@@ -63,10 +63,10 @@ def main():
         
         #["Cyprus", "1. Division", 2],
         #["Germany", "Bundesliga 2", 2],
-        #["Germany", "Bundesliga 1", 6],
+        #["Germany", "Bundesliga 1", 3],
         #["Germany", "Liga 3", 1],
-        #["Spain", "Primera Division", 3],
-        #["Spain", "Segunda Division", 5],
+        #["Spain", "Primera Division", 2],
+        ["Spain", "Segunda Division", 3],
         #["Egypt", "Premier League", 1],
         #["Belgium", "Jupiler Pro League", 8],
         #["Israel", "Ligat ha'Al", 3],
@@ -75,7 +75,7 @@ def main():
         #["Netherlands", "Eredivisie", 4],
         #["Scotland", "Championship", 5],
         #["Scotland", "Premiership", 5],
-        #["Italy", "Serie A", 1],
+        #["Italy", "Serie A", 3],
         
         #["Italy", "Serie B", 6],
 
@@ -85,7 +85,7 @@ def main():
         #["England", "League One", 11],
         #["England", "League Two", 11],
         #["England", "National League", 12],
-        #["England", "Premier League", 6],
+        #["England", "Premier League", 3],
         
         
         #["Oman", "Professional League", 2],
