@@ -333,7 +333,7 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     awayPOddsOfScoring = Utils.fromDecimalProbToPercentage(awayDOddsOfScoring)
     awayPOddsOfCleanSheet = round(100 - homePOddsOfScoring)
     homePOddsOfCleanSheet = round(100 - awayPOddsOfScoring)
-
+    #print( "PPPPPP" + str(awayPOddsOfCleanSheet) )
     #These 2 if statements are simply to prevent ZeroDivisionError (Very rare that these 2 variables are 0)
     if (awayPOddsOfCleanSheet == 0):
         awayPOddsOfCleanSheet = 1
@@ -357,7 +357,7 @@ def predictOne(countryName, leagueName, homeTeam, awayTeam):
     bettingLabelDC = [leagueName, homeTeam, awayTeam, round(Utils.fromDecimalProbToOdds(homeDCChance), 2), round(Utils.fromDecimalProbToOdds(awayDCChance), 2)]   
 
     #Change 3. feb: Taking out all under-bets, only want over0.5, betting label too big...
-    bettingLabel = [leagueName, homeTeam, awayTeam, homeBettingOddsOfScoring, awayBettingOddsOfScoring]
+    bettingLabel = [leagueName, homeTeam, awayTeam, homeBettingOddsOfScoring, awayBettingOddsOfCleanSheet, awayBettingOddsOfScoring, homeBettingOddsOfCleanSheet]
 
     print("{} to score against opponent is: {}% Betting odds: {} - Under 0.5: {}"
     .format(homeTeam, homePOddsOfScoring, homeBettingOddsOfScoring, awayBettingOddsOfCleanSheet))
